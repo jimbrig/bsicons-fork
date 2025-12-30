@@ -1,7 +1,11 @@
 library(rvest)
 
 # https://github.com/twbs/icons/releases
-version <- "1.11.1"
+html <- read_html("https://github.com/twbs/icons/releases/latest")
+url <- html_attr(html_element(html, "meta[property='og:url']"), "content")
+version <- sub("^v", "", basename(url))
+
+cat(paste0('Version: ', version, '\n'))
 
 pkg_home <- rprojroot::find_package_root_file()
 pkgload::load_all(pkg_home)
@@ -15,7 +19,8 @@ new_icon_info <- NULL
 withr::with_tempdir({
   download.file(
     sprintf("https://github.com/twbs/icons/archive/refs/tags/v%s.zip", version),
-    "icons.zip"
+    "icons.zip",
+    mode = 'wb'
   )
   unzip("icons.zip")
   setwd(paste0("icons-", version))
@@ -75,7 +80,11 @@ withr::with_tempdir({
 
   new_icon_info <<- list(
     name = icon_names,
-    contents = vapply(contents, function(x) paste(as.character(x), collapse = "\n"), character(1))
+    contents = vapply(
+      contents,
+      function(x) paste(as.character(x), collapse = "\n"),
+      character(1)
+    )
   )
 })
 
@@ -89,7 +98,8 @@ if (length(missing_icons)) {
   stop(
     "New version of Bootstrap icons dropped the following icons: '",
     paste(missing_icons, collapse = "', '"),
-    "'. Consider keeping them for backwards-compatibility.")
+    "'. Consider keeping them for backwards-compatibility."
+  )
 }
 
 
